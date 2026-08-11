@@ -1485,7 +1485,22 @@
       if (event && event.cancelable) event.preventDefault();
       if (event && event.stopPropagation) event.stopPropagation();
       dodgeCount++;
-      const labels = ['我再想想', '先不要', '我还没想好', '再给我一点时间', '它又跑了'];
+      const labels = [
+        '我再想想',
+        '先不要',
+        '我还没想好',
+        '再给我一点时间',
+        '它又跑了',
+        '哎呀，跑太快了',
+        '这里不行，换一个',
+        '我有点不好意思点',
+        '手滑了，不算不算',
+        '我还没准备好',
+        '你再追追看',
+        '我要躲到月亮后面',
+        '答案好像写在风里',
+        '好啦好啦，怕你了'
+      ];
       noBtn.textContent = labels[Math.min(dodgeCount - 1, labels.length - 1)];
       const btnW = Math.min(170, noBtn.offsetWidth || 140);
       const btnH = 54;
