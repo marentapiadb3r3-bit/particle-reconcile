@@ -1,0 +1,1565 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0c12">
+  <title>慢慢和好 · 粒子道歉信</title>
+  <style>
+    :root {
+      --ink: #0a0c12;
+      --ink-2: #141018;
+      --text: #f7eef2;
+      --muted: #a99ea6;
+      --rose: #ed809f;
+      --gold: #e4c396;
+      --mint: #7bbca6;
+      --line: rgba(255, 255, 255, 0.12);
+      --panel: rgba(16, 18, 24, 0.72);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      background:
+        radial-gradient(120% 90% at 50% 116%, rgba(116, 52, 76, 0.3), transparent 60%),
+        radial-gradient(72% 64% at 80% 6%, rgba(74, 118, 110, 0.14), transparent 54%),
+        linear-gradient(158deg, var(--ink) 0%, var(--ink-2) 54%, #0d0b12 100%);
+      color: var(--text);
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", sans-serif;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #scene {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        radial-gradient(72% 52% at 50% 42%, transparent 42%, rgba(4, 5, 9, 0.28) 82%, rgba(3, 4, 8, 0.72) 100%);
+    }
+
+    .ui {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(16px, 3vw, 34px);
+      pointer-events: none;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .brand {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 13px;
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 5px;
+      white-space: nowrap;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 13px;
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--mint);
+      box-shadow: 0 0 10px var(--mint);
+    }
+
+    .status.is-paused .status-dot {
+      background: var(--muted);
+      box-shadow: none;
+    }
+
+    .bottom {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(14px, 2.4vh, 22px);
+    }
+
+    .story {
+      text-align: center;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+      will-change: opacity, transform;
+    }
+
+    .story.is-on {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .story h1 {
+      margin: 0 0 7px;
+      font-size: clamp(27px, 5vw, 46px);
+      font-weight: 600;
+      letter-spacing: 3px;
+      line-height: 1.15;
+    }
+
+    .story p {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(13px, 1.8vw, 16px);
+      letter-spacing: 1px;
+    }
+
+    @media (max-width: 640px) {
+      .ui {
+        padding: 14px;
+      }
+
+      .brand {
+        font-size: 12px;
+        letter-spacing: 3px;
+        padding: 7px 10px;
+      }
+
+      .status {
+        font-size: 11px;
+        padding: 7px 10px;
+      }
+
+      .story h1 {
+        letter-spacing: 2px;
+      }
+
+    }
+
+    .letter-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(5, 7, 12, 0.52);
+      backdrop-filter: blur(9px);
+      -webkit-backdrop-filter: blur(9px);
+      opacity: 1;
+      transition: opacity 0.45s ease;
+    }
+
+    .letter-overlay.is-hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .letter-card {
+      position: relative;
+      width: min(640px, 100%);
+      max-height: 88vh;
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(17, 19, 26, 0.94);
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+      padding: clamp(22px, 4vw, 34px);
+      scrollbar-width: none;
+    }
+
+    .letter-card::-webkit-scrollbar {
+      display: none;
+    }
+
+    .letter-kicker {
+      color: var(--rose);
+      font-size: 13px;
+      letter-spacing: 4px;
+      margin-bottom: 12px;
+    }
+
+    .letter-title {
+      margin: 0 0 18px;
+      font-size: clamp(22px, 3vw, 30px);
+      font-weight: 600;
+      letter-spacing: 2px;
+    }
+
+    .letter-body {
+      color: #e9dfe4;
+      font-size: 15px;
+      line-height: 1.9;
+      letter-spacing: 0.4px;
+      white-space: pre-line;
+      margin-bottom: 20px;
+    }
+
+    .letter-choices {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .letter-choices button {
+      border: 0;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      padding: 11px 18px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .yes-btn {
+      background: var(--rose);
+      color: #261319;
+      font-weight: 600;
+    }
+
+    .no-btn {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--line) !important;
+      color: #f0e6ea;
+    }
+
+    .no-btn.is-dodging {
+      position: fixed;
+      z-index: 10;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+    }
+
+    .yes-btn.is-growing {
+      transform: scale(1.07);
+      box-shadow: 0 0 34px rgba(237, 128, 159, 0.36);
+    }
+
+    .dodge-hint {
+      min-height: 22px;
+      margin-top: 12px;
+      text-align: center;
+      color: var(--gold);
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    .dodge-buddy {
+      position: fixed;
+      display: none;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #f6c8a8;
+      border: 2px solid rgba(255, 255, 255, 0.86);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+      z-index: 9;
+      transition: left 0.16s ease, top 0.16s ease;
+      pointer-events: none;
+    }
+
+    .dodge-buddy::before,
+    .dodge-buddy::after {
+      content: "";
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3f2a24;
+      top: 22px;
+    }
+
+    .dodge-buddy::before {
+      left: 15px;
+    }
+
+    .dodge-buddy::after {
+      right: 15px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .story {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="vignette"></div>
+
+  <div class="ui">
+    <header class="top">
+      <div class="brand">慢慢和好</div>
+      <div class="status is-paused" id="status">
+        <span class="status-dot"></span>
+        <span id="statusText">已暂停</span>
+      </div>
+    </header>
+
+    <footer class="bottom">
+      <section class="story" id="story" aria-live="polite">
+        <h1 id="storyTitle">有些话，想好好说</h1>
+        <p id="storyLine">这份歉意，想慢慢捧给你。</p>
+      </section>
+
+    </footer>
+  </div>
+
+  <div class="letter-overlay" id="letterOverlay">
+    <div class="letter-card">
+      <div class="letter-kicker">慢慢和好</div>
+      <h2 class="letter-title">一封给好朋友的道歉信</h2>
+      <div class="letter-body">对不起，为之前那些让你有压力的方式道歉。
+
+这几天我认真反省了。过去我分不清依赖和喜欢，也把喜欢想得太简单，一直在讨好、回避，没有把真实的自己好好展示出来，反而让你承担了很多压力。
+
+冷静下来我才更清楚，我最不想失去的，是一个真实的好朋友。我不想再用依赖去绑住你，也不会再打扰你。我会学着用自然、真实的方式去表达和相处。
+
+我想和你重新认识，重新开始一种舒服的交流。你不需要给我任何回应，我只希望我们的友谊还能有一个重新开始的机会。
+
+对不起，也谢谢你让我看见这些问题。我会慢慢改，不会再让你为难。</div>
+      <div class="letter-choices">
+        <button class="yes-btn" id="yesBtn">我愿意，重新认识你</button>
+        <button class="no-btn" id="noBtn">我再想想</button>
+      </div>
+      <div class="dodge-hint" id="dodgeHint"></div>
+    </div>
+    <div class="dodge-buddy" id="dodgeBuddy"></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('scene');
+    const story = document.getElementById('story');
+    const storyTitle = document.getElementById('storyTitle');
+    const storyLine = document.getElementById('storyLine');
+    const status = document.getElementById('status');
+    const statusText = document.getElementById('statusText');
+
+    let gl = null;
+    let ctx2d = null;
+    try {
+      gl = canvas.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: true });
+    } catch (err) {
+      gl = null;
+    }
+    if (!gl) ctx2d = canvas.getContext('2d');
+
+    const TAU = Math.PI * 2;
+    const rand = (a, b) => b === undefined ? Math.random() * a : a + Math.random() * (b - a);
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const deg = (n) => n * Math.PI / 180;
+    const lerp = (a, b, t) => a + (b - a) * t;
+
+    const ROSE = ['#d95f80', '#e2738f', '#ef91a6', '#f6b6bd', '#f7cfbc'];
+    const LOTUS = ['#d76f91', '#e98ca5', '#f3aebc', '#f7cfd2', '#fae4df'];
+    const LEAF = ['#3f8a74', '#4f9d84', '#6bb29a', '#8cc9b4'];
+    const GOLD = ['#e4c396', '#efd7a9', '#f8e7c4'];
+    const MOON = ['#e8c58f', '#f1d8a8', '#f8e7c4'];
+    const TEAL = ['#4f9384', '#78b8a6', '#9dcdbb', '#c4e6d8'];
+    const BIRD = ['#dca5b7', '#e9b8c5', '#f2cdd4'];
+    const GLOW = ['#fff1d6', '#f6d4db', '#dff2e9'];
+
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    let DPR = Math.min(window.devicePixelRatio || 1, 2);
+    let particleCount = gl
+      ? Math.max(3600, Math.min(10000, Math.floor(W * H / 130)))
+      : Math.max(2600, Math.min(6000, Math.floor(W * H / 240)));
+    let particles = [];
+    let patternDefs = [];
+    let currentIndex = 0;
+    let auto = false;
+    let mode = 'scattered';
+    let modeAt = 0;
+    let nextAt = 0;
+    let nextIndex = 0;
+    let currentPoints = [];
+    let bounds = { minX: -1, maxX: 1, minY: -1, maxY: 1 };
+
+    const stars = Array.from({ length: 180 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      s: rand(0.7, 2.1),
+      phase: rand(0, TAU),
+      speed: rand(0.3, 1.4)
+    }));
+
+    const pointer = {
+      x: -9999,
+      y: -9999,
+      vx: 0,
+      vy: 0,
+      active: false,
+      down: false
+    };
+
+    let pressStart = null;
+    let pressTimer = null;
+    let pressMoved = false;
+    let gathering = false;
+    let longPressActivated = false;
+    let drawing = false;
+    let drawPoints = [];
+    let gatherX = 0;
+    let gatherY = 0;
+    let autoBeforeInteraction = false;
+    let modeBeforeInteraction = 'scattered';
+    let lastTapAt = 0;
+
+    function hash(n) {
+      const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+      return s - Math.floor(s);
+    }
+
+    function wobble(n) {
+      return (hash(n) - 0.5) * 2;
+    }
+
+    function bezier(p0, p1, p2, p3, t) {
+      const u = 1 - t;
+      return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
+    }
+
+    function add(points, x, y, color) {
+      points.push({ x, y, color });
+    }
+
+    function petalPoints(points, cx, cy, angle, length, width, count, color, curl = 0) {
+      const dx = Math.cos(angle);
+      const dy = Math.sin(angle);
+      const nx = -dy;
+      const ny = dx;
+      const tipX = cx + dx * length;
+      const tipY = cy + dy * length;
+      const bx = cx + nx * width;
+      const by = cy + ny * width;
+      const rx = cx - nx * width;
+      const ry = cy - ny * width;
+      const mx = cx + dx * length * 0.28 + nx * width * 0.94;
+      const my = cy + dy * length * 0.28 + ny * width * 0.94;
+      const px = cx + dx * length * 0.28 - nx * width * 0.94;
+      const py = cy + dy * length * 0.28 - ny * width * 0.94;
+      const tx = tipX + nx * width * 0.13 + dx * curl;
+      const ty = tipY + ny * width * 0.13 + dy * curl;
+      const ux = tipX - nx * width * 0.13 + dx * curl;
+      const uy = tipY - ny * width * 0.13 + dy * curl;
+
+      for (let i = 0; i < count; i++) {
+        const t = Math.sqrt(Math.random());
+        const s = Math.random();
+        const lx = bezier(bx, mx, tx, tipX, t);
+        const ly = bezier(by, my, ty, tipY, t);
+        const rx0 = bezier(rx, px, ux, tipX, t);
+        const ry0 = bezier(ry, py, uy, tipY, t);
+        const jitter = width * 0.16;
+        add(
+          points,
+          lx + (rx0 - lx) * s + rand(-jitter, jitter),
+          ly + (ry0 - ly) * s + rand(-jitter, jitter),
+          color
+        );
+      }
+    }
+
+    function leafPoints(points, cx, cy, angle, length, width, count, color) {
+      const dx = Math.cos(angle);
+      const dy = Math.sin(angle);
+      const nx = -dy;
+      const ny = dx;
+      for (let i = 0; i < count; i++) {
+        const t = Math.sqrt(Math.random());
+        const s = Math.random() * 2 - 1;
+        const x = cx + dx * t * length + nx * s * width * (1 - t * 0.72) + rand(-0.008, 0.008);
+        const y = cy + dy * t * length + ny * s * width * (1 - t * 0.72) + rand(-0.008, 0.008);
+        add(points, x, y, color);
+      }
+    }
+
+    function diskPoints(points, cx, cy, rx, ry, count, colors) {
+      for (let i = 0; i < count; i++) {
+        const t = rand(0, TAU);
+        const r = Math.sqrt(Math.random());
+        add(points, cx + Math.cos(t) * rx * r, cy + Math.sin(t) * ry * r, pick(colors));
+      }
+    }
+
+    function buildRose() {
+      const pts = [];
+      const cx = 0;
+      const cy = 0.24;
+      const outerAngles = [deg(88), deg(164), deg(238), deg(304), deg(20)];
+      const outerColors = ['#d95f80', '#cf5478', '#d76a8a', '#e2738f', '#d95f80'];
+
+      for (let i = 0; i < outerAngles.length; i++) {
+        const wob = deg(rand(-5, 5));
+        petalPoints(pts, cx, cy, outerAngles[i] + wob, 0.74, 0.35, 155, outerColors[i], -0.04);
+      }
+
+      for (let i = 0; i < 6; i++) {
+        const angle = deg(120 + i * 60 + rand(-7, 7));
+        petalPoints(pts, cx, cy, angle, 0.52, 0.24, 125, pick(['#e67f98', '#ef91a6', '#e77c97']), -0.03);
+      }
+
+      for (let i = 0; i < 7; i++) {
+        const angle = deg(92 + i * 51.4 + rand(-6, 6));
+        petalPoints(pts, cx, cy, angle, 0.32, 0.15, 92, pick(['#f4a8b5', '#f6bdc2', '#f7cdc4']), -0.02);
+      }
+
+      for (let i = 0; i < 340; i++) {
+        const r = Math.sqrt(Math.random()) * 0.13;
+        const t = rand(0, TAU) + r * 18;
+        add(pts, cx + Math.cos(t) * r, cy + Math.sin(t) * r * 1.12, pick(['#f7cdbd', '#f6b9bd', '#f1a3b1']));
+      }
+
+      for (let i = 0; i < 340; i++) {
+        const t = Math.random();
+        const y = -0.28 - t * 0.74;
+        const x = 0.04 * Math.sin(t * 3.1 + 0.7) + rand(-0.014, 0.014);
+        add(pts, x, y, pick(['#3f8a74', '#4f9d84', '#3c816c']));
+      }
+
+      leafPoints(pts, -0.09, -0.6, deg(-34), 0.28, 0.11, 210, pick(LEAF));
+      leafPoints(pts, 0.1, -0.76, deg(148), 0.26, 0.1, 190, pick(LEAF));
+      leafPoints(pts, 0.08, -0.9, deg(120), 0.2, 0.09, 150, pick(LEAF));
+      leafPoints(pts, -0.07, -0.9, deg(-128), 0.18, 0.08, 130, pick(LEAF));
+
+      return pts;
+    }
+
+    function buildLotus() {
+      const pts = [];
+      const flowers = [
+        { cx: -0.42, cy: 0.36, palette: LOTUS },
+        { cx: 0.42, cy: 0.36, palette: LOTUS.slice(1).concat(LOTUS[0]) }
+      ];
+
+      for (const flower of flowers) {
+        for (let i = 0; i < 8; i++) {
+          const angle = deg(i * 45 + rand(-4, 4));
+          petalPoints(pts, flower.cx, flower.cy, angle, 0.5, 0.2, 110, flower.palette[0], -0.02);
+        }
+        for (let i = 0; i < 8; i++) {
+          const angle = deg(i * 45 + 22.5 + rand(-4, 4));
+          petalPoints(pts, flower.cx, flower.cy, angle, 0.36, 0.13, 90, flower.palette[1], -0.02);
+        }
+        for (let i = 0; i < 7; i++) {
+          const angle = deg(i * 51.4 + 11 + rand(-4, 4));
+          petalPoints(pts, flower.cx, flower.cy, angle, 0.22, 0.08, 70, flower.palette[2], -0.02);
+        }
+        diskPoints(pts, flower.cx, flower.cy, 0.07, 0.07, 110, flower.palette.slice(3));
+
+        for (let i = 0; i < 260; i++) {
+          const t = Math.random();
+          const y = -0.04 - t * 0.98;
+          const x = flower.cx * (1 - t * 0.78) + rand(-0.018, 0.018);
+          add(pts, x, y, pick(['#3f8a74', '#4f9d84']));
+        }
+      }
+
+      diskPoints(pts, -0.34, -0.28, 0.3, 0.15, 260, ['#4f9d84', '#5eae95', '#6bb29a']);
+      diskPoints(pts, 0.38, -0.3, 0.32, 0.16, 280, ['#4f9d84', '#5eae95', '#78b8a6']);
+      diskPoints(pts, -0.32, -0.36, 0.12, 0.06, 80, ['#8cc9b4', '#a3d5c1']);
+      diskPoints(pts, 0.34, -0.4, 0.13, 0.07, 80, ['#8cc9b4', '#a3d5c1']);
+
+      return pts;
+    }
+
+    function buildTide() {
+      const pts = [];
+      const moonX = 0.58;
+      const moonY = 0.78;
+      const moonR = 0.3;
+
+      for (let i = 0; i < 760; i++) {
+        const t = rand(0, TAU);
+        const r = Math.sqrt(Math.random()) * moonR;
+        const x = moonX + Math.cos(t) * r;
+        const y = moonY + Math.sin(t) * r * 0.94;
+        const dx = x - (moonX + moonR * 0.2);
+        const dy = y - (moonY + moonR * 0.14);
+        if (dx * dx + dy * dy < moonR * moonR * 0.52) continue;
+        add(pts, x, y, pick(MOON));
+      }
+
+      for (let wave = 0; wave < 7; wave++) {
+        const yBase = -0.06 - wave * 0.145;
+        const amp = 0.055 + wave * 0.024;
+        const color = wave < 2 ? '#b8dfd3' : wave < 4 ? '#78b8a6' : '#4f9384';
+        const count = 330 + wave * 48;
+        for (let i = 0; i < count; i++) {
+          const t = Math.random();
+          const x = -1.08 + t * 2.16;
+          const y = yBase
+            + Math.sin(x * 2.4 + wave * 0.65) * amp
+            + Math.sin(x * 5.2 + wave) * amp * 0.42
+            + rand(-0.018, 0.018);
+          add(pts, x, y, color);
+        }
+      }
+
+      for (let i = 0; i < 300; i++) {
+        const wave = Math.floor(rand(0, 7));
+        const t = Math.random();
+        const x = -1.05 + t * 2.1;
+        const yBase = -0.06 - wave * 0.145;
+        const amp = 0.055 + wave * 0.024;
+        const y = yBase
+          + Math.sin(x * 2.4 + wave * 0.65) * amp
+          + Math.sin(x * 5.2 + wave) * amp * 0.42
+          + rand(-0.03, 0.03);
+        add(pts, x + rand(-0.025, 0.025), y + rand(-0.025, 0.025), pick(GLOW));
+      }
+
+      return pts;
+    }
+
+    function buildGalaxy() {
+      const pts = [];
+      const rotation = -0.4;
+      const cosR = Math.cos(rotation);
+      const sinR = Math.sin(rotation);
+
+      for (let arm = 0; arm < 3; arm++) {
+        const start = arm * TAU / 3;
+        const armColors = arm === 0 ? GOLD : arm === 1 ? ROSE : TEAL;
+        for (let i = 0; i < 980; i++) {
+          const t = rand(0.25, 4.35 * Math.PI);
+          const rr = 0.06 + 0.78 * (t / (4.35 * Math.PI));
+          const theta = start + t;
+          let x = Math.cos(theta) * rr + wobble(i + arm * 99) * 0.016;
+          let y = Math.sin(theta) * rr * 0.9 + wobble(i + arm * 199) * 0.016;
+          const xr = x * cosR - y * sinR;
+          const yr = x * sinR + y * cosR;
+          const color = rr < 0.3 ? pick(GOLD) : rr < 0.58 ? pick(armColors.slice(0, 3)) : pick(armColors);
+          add(pts, xr, yr, color);
+        }
+      }
+
+      diskPoints(pts, 0, 0, 0.12, 0.12, 520, GOLD.concat(GLOW));
+      diskPoints(pts, 0, 0, 0.05, 0.05, 260, GLOW);
+
+      for (let i = 0; i < 320; i++) {
+        const t = rand(0, TAU);
+        const r = Math.sqrt(Math.random()) * 0.94;
+        add(pts, Math.cos(t) * r, Math.sin(t) * r * 0.9, pick(GLOW));
+      }
+
+      return pts;
+    }
+
+    function birdPoints(points, cx, cy, angle, size, count, color) {
+      const dx = Math.cos(angle);
+      const dy = Math.sin(angle);
+      const nx = -dy;
+      const ny = dx;
+      for (let i = 0; i < count; i++) {
+        const t = Math.random() * Math.PI;
+        const spread = Math.sin(t) * size;
+        const forward = Math.cos(t) * size * 0.34;
+        const side = Math.random() < 0.5 ? 1 : -1;
+        const x = cx + dx * forward + nx * spread * 0.72 * side + rand(-0.012, 0.012);
+        const y = cy + dy * forward + ny * spread * 0.72 * side + rand(-0.012, 0.012);
+        add(points, x, y, color);
+      }
+      for (let i = 0; i < count * 0.32; i++) {
+        const t = rand(0, TAU);
+        const r = Math.sqrt(Math.random()) * size * 0.18;
+        add(points, cx + Math.cos(t) * r, cy + Math.sin(t) * r, color);
+      }
+    }
+
+    function buildMoonReturn() {
+      const pts = [];
+      const cx = 0;
+      const cy = 0.48;
+      const r = 0.44;
+
+      for (let i = 0; i < 1500; i++) {
+        const t = rand(0, TAU);
+        const rr = Math.sqrt(Math.random()) * r;
+        const x = cx + Math.cos(t) * rr;
+        const y = cy + Math.sin(t) * rr * 0.96;
+        const dist = Math.sqrt(x * x + (y - cy) * (y - cy));
+        const color = dist < r * 0.72 ? pick(['#f8e7c4', '#f5dca9']) : pick(['#e8c58f', '#e3b983']);
+        add(pts, x, y, color);
+      }
+
+      diskPoints(pts, cx - r * 0.18, cy + r * 0.24, r * 0.14, r * 0.1, 70, ['#d6b17c', '#d3a971']);
+      diskPoints(pts, cx + r * 0.3, cy - r * 0.2, r * 0.12, r * 0.09, 60, ['#d6b17c', '#d3a971']);
+      diskPoints(pts, cx + r * 0.08, cy - r * 0.42, r * 0.1, r * 0.07, 50, ['#d6b17c', '#d3a971']);
+
+      birdPoints(pts, 0.5, -0.3, -0.72, 0.17, 260, '#f2cdd4');
+      birdPoints(pts, 0.72, -0.58, -0.66, 0.14, 210, '#e9b8c5');
+      birdPoints(pts, 0.88, -0.84, -0.56, 0.11, 170, '#dca5b7');
+
+      for (let i = 0; i < 190; i++) {
+        add(pts, rand(-1.08, 1.08), rand(-0.98, 0.98), pick(['#f1d8a8', '#f3b8c6', '#dff2e9']));
+      }
+
+      return pts;
+    }
+
+    function buildReunion() {
+      const pts = [];
+      const r = 0.78;
+
+      for (let i = 0; i < 2600; i++) {
+        const t = rand(0, TAU);
+        const rr = Math.sqrt(Math.random()) * r;
+        const x = Math.cos(t) * rr;
+        const y = Math.sin(t) * rr * 0.96;
+        const seamX = 0.07 * Math.sin(y * 7 + 0.8) + 0.05;
+        if (Math.abs(x - seamX) < 0.032) continue;
+        const color = x < seamX ? pick(['#c85d7f', '#d76a8a', '#e68ba1']) : pick(['#e4c396', '#efd7a9', '#e9c99c']);
+        add(pts, x, y, color);
+      }
+
+      for (let i = 0; i < 260; i++) {
+        const y = rand(-0.7, 0.7);
+        const x = 0.07 * Math.sin(y * 7 + 0.8) + 0.05 + rand(-0.015, 0.015);
+        add(pts, x, y, pick(GLOW));
+      }
+
+      diskPoints(pts, 0.05, 0, 0.05, 0.05, 120, GLOW);
+
+      return pts;
+    }
+
+    function gridDiskPoints(points, cx, cy, rx, ry, step, color, topOnly = false) {
+      for (let y = cy - ry; y <= cy + ry; y += step) {
+        for (let x = cx - rx; x <= cx + rx; x += step) {
+          const nx = (x - cx) / rx;
+          const ny = (y - cy) / ry;
+          if (nx * nx + ny * ny <= 1 && (!topOnly || y > cy + 0.02)) {
+            add(points, x + rand(-step * 0.15, step * 0.15), y + rand(-step * 0.15, step * 0.15), color);
+          }
+        }
+      }
+    }
+
+    function gridRectPoints(points, x0, y0, x1, y1, step, color) {
+      for (let y = y0; y <= y1; y += step) {
+        for (let x = x0; x <= x1; x += step) {
+          add(points, x + rand(-step * 0.15, step * 0.15), y + rand(-step * 0.15, step * 0.15), color);
+        }
+      }
+    }
+
+    function gridLimbPoints(points, x0, y0, x1, y1, width, step, color) {
+      const dx = x1 - x0;
+      const dy = y1 - y0;
+      const len = Math.max(0.0001, Math.sqrt(dx * dx + dy * dy));
+      const nx = -dy / len;
+      const ny = dx / len;
+      const along = Math.max(1, Math.round(len / step));
+      const across = Math.max(1, Math.round(width / (step * 0.8)));
+      for (let i = 0; i <= along; i++) {
+        const t = i / along;
+        for (let j = -across; j <= across; j++) {
+          const off = (j / across) * width;
+          add(
+            points,
+            lerp(x0, x1, t) + nx * off + rand(-step * 0.12, step * 0.12),
+            lerp(y0, y1, t) + ny * off + rand(-step * 0.12, step * 0.12),
+            color
+          );
+        }
+      }
+    }
+
+    function gridArcPoints(points, cx, cy, radius, step, color) {
+      for (let a = Math.PI * 0.2; a <= Math.PI * 0.8; a += step) {
+        add(points, cx + Math.cos(a) * radius, cy - Math.sin(a) * radius * 0.32, color);
+      }
+    }
+
+    function buildKids(close) {
+      const pts = [];
+      const step = 0.007;
+      const gx = close ? -0.36 : -0.64;
+      const bx = close ? 0.36 : 0.64;
+      const girlSkin = '#f8cdb2';
+      const boySkin = '#f4c0a6';
+      const girlHair = '#7a523f';
+      const boyHair = '#51362c';
+      const blush = '#f3a9ae';
+      const eye = '#3a2a26';
+      const eyeLight = '#fff6f0';
+      const dress = ['#f3a6bc', '#f8b9ca', '#fbc7d3'];
+      const shirt = ['#8acbd5', '#a2d8df'];
+      const pants = ['#7f94a4', '#90a6b5'];
+      const shoes = '#f2e6ca';
+      const headY = 0.72;
+      const girlHeadY = headY;
+      const boyHeadY = close ? headY : 0.64;
+      const headR = 0.15;
+
+      function face(points, cx, cy, skin, hair, isGirl) {
+        gridDiskPoints(points, cx, cy, headR + 0.02, headR * 1.08, step, hair);
+        gridDiskPoints(points, cx, cy, headR * 0.92, headR * 0.97, step, skin);
+        gridDiskPoints(points, cx, cy, headR + 0.02, headR * 1.08, step, hair, true);
+        if (isGirl) {
+          gridLimbPoints(points, cx - 0.21, cy + 0.08, cx - 0.25, cy - 0.27, 0.05, step * 0.9, hair);
+          gridLimbPoints(points, cx + 0.21, cy + 0.08, cx + 0.25, cy - 0.27, 0.05, step * 0.9, hair);
+        }
+
+        gridDiskPoints(points, cx - 0.06, cy + 0.01, 0.035, 0.028, 0.006, eye);
+        gridDiskPoints(points, cx + 0.06, cy + 0.01, 0.035, 0.028, 0.006, eye);
+        gridDiskPoints(points, cx - 0.048, cy + 0.028, 0.013, 0.013, 0.005, eyeLight);
+        gridDiskPoints(points, cx + 0.048, cy + 0.028, 0.013, 0.013, 0.005, eyeLight);
+        gridLimbPoints(points, cx - 0.1, cy + 0.1, cx - 0.04, cy + 0.115, 0.008, 0.005, hair);
+        gridLimbPoints(points, cx + 0.04, cy + 0.115, cx + 0.1, cy + 0.1, 0.008, 0.005, hair);
+        gridDiskPoints(points, cx - 0.12, cy - 0.08, 0.03, 0.02, 0.006, blush);
+        gridDiskPoints(points, cx + 0.12, cy - 0.08, 0.03, 0.02, 0.006, blush);
+        gridArcPoints(points, cx, cy - 0.12, 0.05, 0.005, '#9a5b4d');
+      }
+
+      face(pts, gx, girlHeadY, girlSkin, girlHair, true);
+      for (let y = 0.42; y >= -0.1; y -= step) {
+        const t = (0.42 - y) / 0.52;
+        const half = 0.14 * (1 + t * 1.25);
+        for (let x = -half; x <= half; x += step * 0.82) {
+          add(pts, gx + x + rand(-step * 0.12, step * 0.12), y + rand(-step * 0.12, step * 0.12), pick(dress));
+        }
+      }
+      gridLimbPoints(pts, gx - 0.15, 0.38, gx - 0.28, 0.12, 0.05, step, girlSkin);
+      gridLimbPoints(pts, gx + 0.15, 0.38, close ? gx + 0.2 : gx + 0.34, close ? 0.24 : 0.12, 0.05, step, girlSkin);
+      gridLimbPoints(pts, gx - 0.08, -0.08, gx - 0.11, -0.5, 0.06, step, girlSkin);
+      gridLimbPoints(pts, gx + 0.08, -0.08, gx + 0.11, -0.5, 0.06, step, girlSkin);
+      gridDiskPoints(pts, gx - 0.12, -0.53, 0.08, 0.045, 0.007, shoes);
+      gridDiskPoints(pts, gx + 0.12, -0.53, 0.08, 0.045, 0.007, shoes);
+
+      face(pts, bx, boyHeadY, boySkin, boyHair, false);
+      gridRectPoints(pts, bx - 0.16, 0.14, bx + 0.16, 0.42, step, pick(shirt));
+      gridRectPoints(pts, bx - 0.15, 0.0, bx + 0.15, 0.14, step, pick(pants));
+      gridLimbPoints(pts, bx - 0.15, 0.38, close ? bx - 0.2 : bx - 0.34, close ? 0.24 : 0.12, 0.05, step, boySkin);
+      gridLimbPoints(pts, bx + 0.15, 0.38, bx + 0.28, 0.12, 0.05, step, boySkin);
+      gridLimbPoints(pts, bx - 0.08, -0.02, bx - 0.11, -0.5, 0.06, step, pick(pants));
+      gridLimbPoints(pts, bx + 0.08, -0.02, bx + 0.11, -0.5, 0.06, step, pick(pants));
+      gridDiskPoints(pts, bx - 0.12, -0.53, 0.08, 0.045, 0.007, shoes);
+      gridDiskPoints(pts, bx + 0.12, -0.53, 0.08, 0.045, 0.007, shoes);
+
+      if (close) {
+        gridLimbPoints(pts, gx + 0.2, 0.24, -0.06, 0.24, 0.05, step, girlSkin);
+        gridLimbPoints(pts, bx - 0.2, 0.24, 0.06, 0.24, 0.05, step, boySkin);
+        gridDiskPoints(pts, -0.045, 0.24, 0.05, 0.04, 0.006, girlSkin);
+        gridDiskPoints(pts, 0.045, 0.24, 0.05, 0.04, 0.006, boySkin);
+        gridDiskPoints(pts, 0, 0.37, 0.05, 0.05, 0.006, GLOW);
+      }
+
+      return pts;
+    }
+
+    const patternDefsRaw = [
+      { title: '初绽玫瑰', line: '我把我的歉意，慢慢捧到面前。', build: buildRose },
+      { title: '并蒂莲', line: '我们曾是一起盛开的好朋友。', build: buildLotus },
+      { title: '潮汐', line: '退潮不是结束，海还在。', build: buildTide },
+      { title: '银河星轨', line: '绕远之后，还是想回到同一片夜空。', build: buildGalaxy },
+      { title: '月归', line: '夜再深，月亮也会回来。', build: buildMoonReturn },
+      { title: '重圆', line: '裂痕还在，光却完整了。', build: buildReunion },
+      { title: '重新认识', line: '我会站在这里，好好道歉。', build: () => buildKids(false) },
+      { title: '牵手和好', line: '牵起手，和好吧。', build: () => buildKids(true) }
+    ];
+
+    function pickPoints(points, count) {
+      const result = [];
+      if (points.length >= count) {
+        for (let i = 0; i < count; i++) {
+          result.push(points[Math.floor(i * points.length / count)]);
+        }
+      } else {
+        for (let i = 0; i < count; i++) {
+          const p = points[i % points.length];
+          result.push({
+            x: p.x + rand(-0.003, 0.003),
+            y: p.y + rand(-0.003, 0.003),
+            color: p.color
+          });
+        }
+      }
+      return result;
+    }
+
+    function hexToRgb(hex) {
+      const n = parseInt(hex.slice(1), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    function buildPatterns() {
+      patternDefs = patternDefsRaw.map((def) => ({
+        title: def.title,
+        line: def.line,
+        points: pickPoints(def.build(), particleCount)
+      }));
+    }
+
+    function computeBounds(points) {
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      let maxY = -Infinity;
+      for (const p of points) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+      }
+      return { minX, maxX, minY, maxY };
+    }
+
+    function toScreen(points) {
+      const w = Math.max(0.01, bounds.maxX - bounds.minX);
+      const h = Math.max(0.01, bounds.maxY - bounds.minY);
+      const scale = Math.min(W / (w * 1.08), H / (h * 1.08));
+      const ox = W / 2 - (bounds.minX + bounds.maxX) / 2 * scale;
+      const oy = H / 2 + (bounds.minY + bounds.maxY) / 2 * scale;
+      return points.map((p) => ({
+        x: ox + p.x * scale,
+        y: oy - p.y * scale,
+        color: p.color
+      }));
+    }
+
+    function initParticles() {
+      particles = [];
+      const palette = ['#d95f80', '#e4c396', '#78b8a6', '#f1d8a8', '#ef91a6', '#8cc9b4'];
+      for (let i = 0; i < particleCount; i++) {
+        const color = hexToRgb(pick(palette));
+        particles.push({
+          x: rand(0, W),
+          y: rand(0, H),
+          vx: rand(-0.4, 0.4),
+          vy: rand(-0.4, 0.4),
+          tx: rand(0, W),
+          ty: rand(0, H),
+          size: rand(2.8, 5.2),
+          alpha: rand(0.35, 0.9),
+          phase: rand(0, TAU),
+          cr: color[0],
+          cg: color[1],
+          cb: color[2],
+          tr: color[0],
+          tg: color[1],
+          tb: color[2]
+        });
+      }
+    }
+
+    function setStory(title, line) {
+      storyTitle.textContent = title;
+      storyLine.textContent = line;
+      story.classList.remove('is-on');
+      void story.offsetWidth;
+      story.classList.add('is-on');
+    }
+
+    function setTargetsFromPoints(points) {
+      bounds = computeBounds(points);
+      currentPoints = toScreen(points);
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const t = currentPoints[i];
+        p.tx = t.x;
+        p.ty = t.y;
+        const c = hexToRgb(t.color);
+        p.tr = c[0];
+        p.tg = c[1];
+        p.tb = c[2];
+      }
+    }
+
+    function beginForm(index, hold = 6500) {
+      currentIndex = index;
+      setTargetsFromPoints(patternDefs[index].points);
+      setStory(patternDefs[index].title, patternDefs[index].line);
+      mode = 'forming';
+      modeAt = performance.now();
+      nextAt = modeAt + Math.min(hold, 3400);
+    }
+
+    function scatter() {
+      for (const p of particles) {
+        p.tx = rand(0, W);
+        p.ty = rand(0, H);
+        p.tr = 178;
+        p.tg = 188;
+        p.tb = 198;
+      }
+    }
+
+    function beginScatter(hold, returnTo) {
+      scatter();
+      mode = 'scattering';
+      modeAt = performance.now();
+      nextAt = modeAt + hold;
+      nextIndex = returnTo;
+    }
+
+    function nextPatternIndex() {
+      return (currentIndex + 1) % patternDefs.length;
+    }
+
+    function updateAutoUI() {
+      status.classList.toggle('is-paused', !auto);
+      statusText.textContent = auto ? '自动播放中' : '已暂停';
+    }
+
+    function updateMode(now) {
+      if (!auto) return;
+      if (mode === 'forming' && now >= nextAt) {
+        mode = 'holding';
+        nextAt = now + 5200;
+      } else if (mode === 'holding' && now >= nextAt) {
+        beginScatter(2400, nextPatternIndex());
+      } else if (mode === 'scattering' && now >= nextAt) {
+        beginForm(nextIndex, 6800);
+      }
+    }
+
+    function applyPointerForce(p) {
+      if (!pointer.active || pointer.down || mode === 'holding') return;
+      const dx = p.x - pointer.x;
+      const dy = p.y - pointer.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 300 || dist < 0.01) return;
+      const falloff = 1 - dist / 300;
+      const modeScale = mode === 'scattered' ? 0.9 : 0.4;
+      const push = falloff * 0.35 * modeScale;
+      const tx = -dy / dist;
+      const ty = dx / dist;
+      p.vx += (tx * 1.9 + pointer.vx * 0.14) * push;
+      p.vy += (ty * 1.9 + pointer.vy * 0.14) * push;
+    }
+
+    function updateParticles(now) {
+      const ease = mode === 'forming' ? 0.06 : mode === 'gathering' ? 0.085 : 0.03;
+      const targetAlpha = mode === 'scattering' ? 0.48 : mode === 'gathering' ? 1 : 0.9;
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+
+        if (mode === 'gathering') {
+          const angle = p.phase + now * 0.0014;
+          const radius = 12 + (hash(i * 3.7 + now * 0.0001) % 1) * 44;
+          p.tx = gatherX + Math.cos(angle) * radius;
+          p.ty = gatherY + Math.sin(angle) * radius * 0.82;
+          p.tr = 255;
+          p.tg = 218;
+          p.tb = 165;
+        } else if (mode === 'drawing' && drawPoints.length) {
+          const d = drawPoints[i % drawPoints.length];
+          p.tx = d.x;
+          p.ty = d.y;
+          const palette = [230, 195, 150];
+          p.tr = palette[0];
+          p.tg = palette[1];
+          p.tb = palette[2];
+        }
+
+        applyPointerForce(p);
+        if (mode === 'holding') {
+          p.x += (p.tx - p.x) * 0.18;
+          p.y += (p.ty - p.y) * 0.18;
+          p.vx = 0;
+          p.vy = 0;
+        } else {
+          p.vx += (p.tx - p.x) * ease;
+          p.vy += (p.ty - p.y) * ease;
+          p.vx *= 0.86;
+          p.vy *= 0.86;
+        }
+
+        if (mode === 'forming') {
+          const breathe = Math.sin(now / 720 + p.phase) * 0.1;
+          p.x += p.vx + breathe * 0.12;
+          p.y += p.vy;
+        } else if (mode === 'gathering' || mode === 'drawing') {
+          p.x += p.vx;
+          p.y += p.vy;
+        } else if (mode !== 'holding') {
+          p.x += p.vx + Math.sin(now / 1500 + p.phase) * 0.07;
+          p.y += p.vy + Math.cos(now / 1300 + p.phase * 1.3) * 0.07;
+        }
+
+        p.cr += (p.tr - p.cr) * 0.06;
+        p.cg += (p.tg - p.cg) * 0.06;
+        p.cb += (p.tb - p.cb) * 0.06;
+        p.alpha += (targetAlpha - p.alpha) * 0.04;
+      }
+    }
+
+    function draw2DFallback(now) {
+      ctx2d.clearRect(0, 0, W, H);
+      ctx2d.globalCompositeOperation = 'source-over';
+      for (const s of stars) {
+        const tw = 0.14 + 0.26 * (0.5 + 0.5 * Math.sin(now / 1000 * s.speed + s.phase));
+        ctx2d.globalAlpha = tw;
+        ctx2d.fillStyle = '#e8dfd6';
+        ctx2d.fillRect(s.x * W, s.y * H, s.s, s.s);
+      }
+      ctx2d.globalAlpha = 1;
+      ctx2d.globalCompositeOperation = 'lighter';
+      for (const p of particles) {
+        const pulse = 0.82 + 0.28 * Math.sin(now / 900 + p.phase);
+        const size = p.size * pulse;
+        const a = clamp(p.alpha, 0, 1);
+        ctx2d.globalAlpha = a * 0.16;
+        ctx2d.fillStyle = `rgb(${p.cr | 0},${p.cg | 0},${p.cb | 0})`;
+        ctx2d.beginPath();
+        ctx2d.arc(p.x, p.y, size * 1.35, 0, TAU);
+        ctx2d.fill();
+        ctx2d.globalAlpha = a;
+        ctx2d.fillRect(p.x - size * 0.5, p.y - size * 0.5, size, size);
+      }
+      ctx2d.globalAlpha = 1;
+      ctx2d.globalCompositeOperation = 'source-over';
+    }
+
+    let glProgram = null;
+    let glVBuffer = null;
+    let glSBuffer = null;
+    let aPos = 0;
+    let aColor = 0;
+    let aAlpha = 0;
+    let aSize = 0;
+    let uRes = null;
+    let uDPR = null;
+
+    function createShader(type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      return shader;
+    }
+
+    function initGL() {
+      if (!gl) return;
+      const vs = `
+        attribute vec2 a_pos;
+        attribute vec3 a_color;
+        attribute float a_alpha;
+        attribute float a_size;
+        uniform vec2 u_resolution;
+        uniform float u_dpr;
+        varying vec3 v_color;
+        varying float v_alpha;
+        void main() {
+          vec2 pos = a_pos / u_resolution * 2.0 - 1.0;
+          gl_Position = vec4(pos.x, -pos.y, 0.0, 1.0);
+          gl_PointSize = a_size * u_dpr;
+          v_color = a_color;
+          v_alpha = a_alpha;
+        }
+      `;
+      const fs = `
+        precision mediump float;
+        varying vec3 v_color;
+        varying float v_alpha;
+        void main() {
+          vec2 uv = gl_PointCoord - 0.5;
+          float d = length(uv);
+          float glow = exp(-d * d * 26.0);
+          float core = smoothstep(0.48, 0.0, d);
+          float a = clamp(v_alpha * (glow * 0.6 + core), 0.0, 1.0);
+          gl_FragColor = vec4(v_color, a);
+        }
+      `;
+      const vertexShader = createShader(gl.VERTEX_SHADER, vs);
+      const fragmentShader = createShader(gl.FRAGMENT_SHADER, fs);
+      glProgram = gl.createProgram();
+      gl.attachShader(glProgram, vertexShader);
+      gl.attachShader(glProgram, fragmentShader);
+      gl.linkProgram(glProgram);
+      gl.useProgram(glProgram);
+
+      aPos = gl.getAttribLocation(glProgram, 'a_pos');
+      aColor = gl.getAttribLocation(glProgram, 'a_color');
+      aAlpha = gl.getAttribLocation(glProgram, 'a_alpha');
+      aSize = gl.getAttribLocation(glProgram, 'a_size');
+      uRes = gl.getUniformLocation(glProgram, 'u_resolution');
+      uDPR = gl.getUniformLocation(glProgram, 'u_dpr');
+
+      gl.enableVertexAttribArray(aPos);
+      gl.enableVertexAttribArray(aColor);
+      gl.enableVertexAttribArray(aAlpha);
+      gl.enableVertexAttribArray(aSize);
+      glVBuffer = gl.createBuffer();
+      glSBuffer = gl.createBuffer();
+    }
+
+    function uploadAndDraw(buffer, data, count) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 28, 0);
+      gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, 28, 8);
+      gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, 28, 20);
+      gl.vertexAttribPointer(aSize, 1, gl.FLOAT, false, 28, 24);
+      gl.drawArrays(gl.POINTS, 0, count);
+    }
+
+    function drawGL(now) {
+      const starData = new Float32Array(stars.length * 7);
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        const tw = 0.1 + 0.3 * (0.5 + 0.5 * Math.sin(now / 1000 * s.speed + s.phase));
+        const o = i * 7;
+        starData[o] = s.x * W;
+        starData[o + 1] = s.y * H;
+        starData[o + 2] = 0.86;
+        starData[o + 3] = 0.82;
+        starData[o + 4] = 0.78;
+        starData[o + 5] = tw;
+        starData[o + 6] = s.s;
+      }
+
+      const data = new Float32Array(particles.length * 7);
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const o = i * 7;
+        data[o] = p.x;
+        data[o + 1] = p.y;
+        data[o + 2] = p.cr / 255;
+        data[o + 3] = p.cg / 255;
+        data[o + 4] = p.cb / 255;
+        data[o + 5] = clamp(p.alpha, 0, 1);
+        data[o + 6] = p.size * (0.86 + 0.28 * Math.sin(now / 900 + p.phase));
+      }
+
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.useProgram(glProgram);
+      gl.uniform2f(uRes, W, H);
+      gl.uniform1f(uDPR, DPR);
+      uploadAndDraw(glSBuffer, starData, stars.length);
+      uploadAndDraw(glVBuffer, data, particles.length);
+    }
+
+    function draw(now) {
+      updateMode(now);
+      updateParticles(now);
+      if (gl && glProgram) {
+        drawGL(now);
+      } else if (ctx2d) {
+        draw2DFallback(now);
+      }
+      requestAnimationFrame(draw);
+    }
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(W * DPR);
+      canvas.height = Math.floor(H * DPR);
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      if (gl) {
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      } else if (ctx2d) {
+        ctx2d.setTransform(DPR, 0, 0, DPR, 0, 0);
+      }
+
+      if (!particles.length) return;
+      if (mode === 'scattering' || mode === 'gathering' || mode === 'drawing') {
+        scatter();
+      } else if (patternDefs.length) {
+        setTargetsFromPoints(patternDefs[currentIndex].points);
+      }
+    }
+
+    function finishDrawing() {
+      drawing = false;
+      if (longPressActivated) {
+        longPressActivated = false;
+        auto = false;
+        updateAutoUI();
+        beginScatter(Number.MAX_SAFE_INTEGER, currentIndex);
+        setStory('有些话，想好好说', '这份歉意，想慢慢捧给你。');
+        drawPoints = [];
+        return;
+      }
+      auto = autoBeforeInteraction;
+      updateAutoUI();
+      if (modeBeforeInteraction === 'forming' || modeBeforeInteraction === 'holding') {
+        beginForm(currentIndex, 6200);
+        setStory(patternDefs[currentIndex].title, patternDefs[currentIndex].line);
+      } else {
+        beginScatter(1800, currentIndex);
+        setStory('有些话，想好好说', '这份歉意，想慢慢捧给你。');
+      }
+      drawPoints = [];
+    }
+
+    function startDrawing() {
+      if (drawing) return;
+      drawing = true;
+      autoBeforeInteraction = auto;
+      modeBeforeInteraction = mode;
+      auto = false;
+      updateAutoUI();
+      mode = 'drawing';
+      setStory('风经过', '吹散一下，还会回来。');
+    }
+
+    function startGather() {
+      if (!pressStart || pressMoved || gathering) return;
+      longPressActivated = true;
+      gathering = true;
+      auto = false;
+      updateAutoUI();
+      beginScatter(Number.MAX_SAFE_INTEGER, currentIndex);
+      setStory('有些话，想好好说', '这份歉意，想慢慢捧给你。');
+    }
+
+    function releaseGather() {
+      gathering = false;
+      longPressActivated = false;
+      auto = false;
+      updateAutoUI();
+      beginScatter(Number.MAX_SAFE_INTEGER, currentIndex);
+      setStory('有些话，想好好说', '这份歉意，想慢慢捧给你。');
+    }
+
+    function handleTap() {
+      const now = performance.now();
+      if (now - lastTapAt < 320) {
+        lastTapAt = 0;
+        auto = false;
+        updateAutoUI();
+        beginScatter(Number.MAX_SAFE_INTEGER, currentIndex);
+        setStory('有些话，想好好说', '这份歉意，想慢慢捧给你。');
+        return;
+      }
+      lastTapAt = now;
+      const firstStart = !auto;
+      auto = true;
+      updateAutoUI();
+      beginForm(firstStart ? currentIndex : nextPatternIndex(), 6800);
+      setStory(patternDefs[currentIndex].title, patternDefs[currentIndex].line);
+    }
+
+    function onPointerDown(event) {
+      if (event.button !== undefined && event.button !== 0 && event.pointerType === 'mouse') return;
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+      pointer.vx = 0;
+      pointer.vy = 0;
+      pointer.active = true;
+      pointer.down = true;
+      pressStart = { x: event.clientX, y: event.clientY };
+      pressMoved = false;
+      gathering = false;
+      longPressActivated = false;
+      drawing = false;
+      drawPoints = [];
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(startGather, 500);
+      try {
+        canvas.setPointerCapture(event.pointerId);
+      } catch (err) {
+        // pointer capture is optional
+      }
+    }
+
+    function onPointerMove(event) {
+      if (event.target.closest && event.target.closest('button')) return;
+      const x = event.clientX;
+      const y = event.clientY;
+      pointer.vx = pointer.vx * 0.72 + (x - pointer.x) * 0.28;
+      pointer.vy = pointer.vy * 0.72 + (y - pointer.y) * 0.28;
+      pointer.x = x;
+      pointer.y = y;
+      pointer.active = true;
+      if (!pointer.down || !pressStart) return;
+      const dist = Math.hypot(x - pressStart.x, y - pressStart.y);
+      if (dist > 16 && !pressMoved) {
+        pressMoved = true;
+        clearTimeout(pressTimer);
+        if (gathering) {
+          gathering = false;
+        }
+        startDrawing();
+      }
+      if (drawing && drawPoints.length) {
+        const last = drawPoints[drawPoints.length - 1];
+        if (Math.hypot(x - last.x, y - last.y) > 9) drawPoints.push({ x, y });
+      } else if (drawing) {
+        drawPoints.push({ x, y });
+      }
+    }
+
+    function onPointerUp(event) {
+      if (!pointer.down) return;
+      clearTimeout(pressTimer);
+      const wasGather = gathering;
+      const wasDraw = drawing;
+      const wasTap = !pressMoved && !gathering && !drawing;
+      if (wasGather || (longPressActivated && !wasDraw)) releaseGather();
+      else if (wasDraw) finishDrawing();
+      else if (wasTap) handleTap();
+      pointer.down = false;
+      pressStart = null;
+      drawing = false;
+      gathering = false;
+      drawPoints = [];
+    }
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    canvas.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && (mode === 'forming' || mode === 'holding')) {
+        modeAt = performance.now();
+        nextAt = modeAt + 3600;
+      }
+    });
+
+    const letterOverlay = document.getElementById('letterOverlay');
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn = document.getElementById('noBtn');
+    const dodgeHint = document.getElementById('dodgeHint');
+    const dodgeBuddy = document.getElementById('dodgeBuddy');
+    let dodgeCount = 0;
+    let swallowClickUntil = 0;
+
+    function rectsOverlap(a, b, pad) {
+      return !(
+        a.right + pad < b.left ||
+        a.left - pad > b.right ||
+        a.bottom + pad < b.top ||
+        a.top - pad > b.bottom
+      );
+    }
+
+    function dodgeNo(event) {
+      if (event && event.cancelable) event.preventDefault();
+      if (event && event.stopPropagation) event.stopPropagation();
+      dodgeCount++;
+      const labels = ['我再想想', '先不要', '我还没想好', '再给我一点时间', '它又跑了'];
+      noBtn.textContent = labels[Math.min(dodgeCount - 1, labels.length - 1)];
+      const btnW = Math.min(170, noBtn.offsetWidth || 140);
+      const btnH = 54;
+      const yesRect = yesBtn.getBoundingClientRect();
+      let x = 12;
+      let y = 96;
+      for (let i = 0; i < 24; i++) {
+        const nx = rand(12, Math.max(12, window.innerWidth - btnW - 12));
+        const ny = rand(96, Math.max(96, window.innerHeight - btnH - 12));
+        if (!rectsOverlap(
+          { left: nx, top: ny, right: nx + btnW, bottom: ny + btnH },
+          { left: yesRect.left, top: yesRect.top, right: yesRect.right, bottom: yesRect.bottom },
+          22
+        )) {
+          x = nx;
+          y = ny;
+          break;
+        }
+      }
+      noBtn.classList.add('is-dodging');
+      noBtn.style.left = x + 'px';
+      noBtn.style.top = y + 'px';
+      noBtn.style.transform = `scale(${Math.max(0.42, 1 - dodgeCount * 0.13)})`;
+      swallowClickUntil = performance.now() + 500;
+      yesBtn.style.pointerEvents = 'none';
+      setTimeout(() => {
+        yesBtn.style.pointerEvents = '';
+      }, 500);
+      dodgeBuddy.style.display = 'block';
+      dodgeBuddy.style.left = (x - 18) + 'px';
+      dodgeBuddy.style.top = (y - 68) + 'px';
+      dodgeHint.textContent = dodgeCount > 4
+        ? '它已经躲起来啦，答案好像很明显'
+        : dodgeCount > 2
+          ? '它跑啦，再试一次'
+          : '它跑啦';
+      yesBtn.classList.add('is-growing');
+    }
+
+    noBtn.addEventListener('pointerdown', dodgeNo);
+    noBtn.addEventListener('pointerenter', dodgeNo);
+    noBtn.addEventListener('click', (event) => event.preventDefault());
+    noBtn.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') dodgeNo(event);
+    });
+
+    document.addEventListener('click', (event) => {
+      if (performance.now() < swallowClickUntil) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+      }
+    }, true);
+
+    yesBtn.addEventListener('click', () => {
+      letterOverlay.classList.add('is-hidden');
+      auto = true;
+      updateAutoUI();
+      beginForm(6, 7200);
+    });
+
+    function init() {
+      buildPatterns();
+      initParticles();
+      resize();
+      updateAutoUI();
+      scatter();
+      mode = 'scattering';
+      nextAt = Number.MAX_SAFE_INTEGER;
+      initGL();
+      requestAnimationFrame(draw);
+    }
+
+    init();
+  </script>
+</body>
+</html>
